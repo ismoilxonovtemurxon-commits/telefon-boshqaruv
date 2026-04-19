@@ -392,14 +392,16 @@ onAuthStateChanged(auth,async(user)=>{
 
 async function loadPhones(){
   try{
-    // Eski userId bilan saqlangan barcha telefonlarni olish
-    const snap=await getDocs(query(collection(db,'phones'),where('userId','==',currentUser.uid)));
-    const snap2=await getDocs(query(collection(db,'phones'),where('adminUid','==',currentUser.uid)));
-    const seen=new Set();
+    let snap;
+    if(currentRole==='admin'){
+      // Admin barcha tovarlarni ko'radi
+      snap=await getDocs(collection(db,'phones'));
+    } else {
+      // Xodim faqat o'zi qo'shganlarni ko'radi
+      snap=await getDocs(query(collection(db,'phones'),where('userId','==',currentUser.uid)));
+    }
     phones=[];
-    [snap,snap2].forEach(s=>{
-      s.forEach(d=>{if(!seen.has(d.id)){seen.add(d.id);phones.push({id:d.id,...d.data()});}});
-    });
+    snap.forEach(d=>phones.push({id:d.id,...d.data()}));
     phones.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     updateStats();renderList();renderRecent();renderDebtList();
   }catch(e){toast('❌ '+e.message,'error');}
