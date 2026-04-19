@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telefon Boshqaruv</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--card:#1a1a24;--border:#2a2a3a;
+  --accent:#6c63ff;--accent2:#ff6584;--green:#00e5a0;--red:#ff4d6a;
+  --yellow:#ffd166;--orange:#ff9f43;--text:#e8e8f0;--muted:#7070a0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+#loadingPage{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;}
+.loading-logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.auth-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+.login-logo{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;text-align:center;}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:32px;}
+.auth-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 24px;}
+.auth-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:20px;text-align:center;}
+.form-group{margin-bottom:14px;}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500;}
+input,select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;}
+input:focus,select:focus{border-color:var(--accent);}
+input::placeholder{color:var(--muted);}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-bottom:8px;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#9b8dff);color:white;}
+.btn-primary:active{transform:scale(0.98);}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.auth-error{font-size:12px;text-align:center;margin-top:8px;min-height:18px;}
+.role-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.role-admin{background:rgba(108,99,255,0.2);color:var(--accent);}
+.role-staff{background:rgba(255,209,102,0.2);color:var(--yellow);}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.logout-btn{background:rgba(255,77,106,0.1);color:var(--red);border:1px solid rgba(255,77,106,0.2);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tabs{display:flex;gap:4px;background:var(--card);padding:4px;border-radius:12px;margin:14px 16px;}
+.tab{flex:1;padding:8px 4px;border:none;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;background:transparent;color:var(--muted);transition:all 0.2s;}
+.tab.active{background:var(--accent);color:white;}
+.page{display:none;padding:0 16px 80px;}
+.page.active{display:block;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;}
+.stat-card.full{grid-column:span 2;}
+.stat-card.debt-card{border-color:rgba(255,77,106,0.4);background:rgba(255,77,106,0.05);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.stat-value{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;}
+.stat-value.green{color:var(--green);}
+.stat-value.red{color:var(--red);}
+.stat-value.yellow{color:var(--yellow);}
+.stat-value.accent{color:var(--accent);}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;}
+.form-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:14px;color:var(--accent);}
+.search-wrap{position:relative;margin-bottom:14px;}
+.search-wrap input{padding-left:40px;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;}
+.filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.filter-btn{padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;}
+.filter-btn.active{background:var(--surface);color:var(--text);border-color:var(--accent);}
+.phone-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;}
+.phone-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green);border-radius:3px 0 0 3px;}
+.phone-card.sold::before{background:var(--accent);}
+.phone-card.debt::before{background:var(--red);}
+.phone-card.debt{border-color:rgba(255,77,106,0.35);background:rgba(255,77,106,0.04);}
+.phone-card.overdue{border-color:rgba(255,77,106,0.6);animation:pulse-red 2s infinite;}
+@keyframes pulse-red{0%,100%{border-color:rgba(255,77,106,0.4);}50%{border-color:rgba(255,77,106,0.9);}}
+.phone-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.phone-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+.phone-status{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:rgba(0,229,160,0.15);color:var(--green);}
+.phone-card.sold .phone-status{background:rgba(108,99,255,0.15);color:var(--accent);}
+.phone-card.debt .phone-status{background:rgba(255,77,106,0.15);color:var(--red);}
+.phone-details{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.detail-key{font-size:10px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;}
+.detail-val{font-size:13px;font-weight:500;}
+.phone-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.btn-sm{flex:1;padding:8px;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;min-width:44px;}
+.btn-sell{background:rgba(0,229,160,0.15);color:var(--green);border:1px solid rgba(0,229,160,0.3);}
+.btn-debt{background:rgba(255,159,67,0.15);color:var(--orange);border:1px solid rgba(255,159,67,0.3);}
+.btn-debt-paid{background:rgba(0,229,160,0.15);color:var(--green);border:1px solid rgba(0,229,160,0.3);}
+.btn-edit{background:rgba(108,99,255,0.15);color:var(--accent);border:1px solid rgba(108,99,255,0.3);}
+.btn-delete{background:rgba(255,77,106,0.1);color:var(--red);border:1px solid rgba(255,77,106,0.2);flex:0 0 38px;}
+.profit-row{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border);margin-top:4px;}
+.profit-label{font-size:12px;color:var(--muted);}
+.profit-val{font-size:15px;font-weight:700;}
+.profit-val.pos{color:var(--green);}
+.profit-val.neg{color:var(--red);}
+.debt-info{margin-top:8px;padding:8px 10px;background:rgba(255,77,106,0.08);border-radius:8px;border-left:2px solid var(--red);}
+.debt-info-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;}
+.note-box{margin-top:8px;padding:8px 10px;background:rgba(108,99,255,0.08);border-radius:8px;border-left:2px solid var(--accent);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:flex-end;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px 16px 40px;width:100%;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;margin-bottom:16px;text-align:center;}
+.modal-sub{text-align:center;margin-bottom:14px;color:var(--muted);font-size:13px;}
+.modal-actions{display:flex;gap:8px;margin-top:8px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+.empty-text{font-size:14px;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#000;padding:12px 24px;border-radius:50px;font-size:13px;font-weight:600;z-index:999;transition:transform 0.3s;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.error{background:var(--red);color:white;}
+.overdue-badge{display:inline-block;background:var(--red);color:white;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;}
+/* LOG */
+.log-item{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;}
+.log-icon{font-size:16px;flex-shrink:0;margin-top:2px;}
+.log-text{font-size:12px;color:var(--text);}
+.log-meta{font-size:10px;color:var(--muted);margin-top:3px;}
+.log-action-add{color:var(--green);}
+.log-action-sell{color:var(--accent);}
+.log-action-debt{color:var(--orange);}
+.log-action-delete{color:var(--red);}
+.log-action-edit{color:var(--yellow);}
+</style>
+</head>
+<body>
+
+<div id="loadingPage">
+  <div class="loading-logo">📱 Telefon Boshqaruv</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginPage" class="auth-page" style="display:none">
+  <div class="login-logo">📱 Telefon Boshqaruv</div>
+  <div class="login-sub">Do'kon hisobi tizimi</div>
+  <div class="auth-card">
+    <div class="auth-title">🔐 Kirish</div>
+    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="email@gmail.com"></div>
+    <div class="form-group"><label>Parol</label>
+      <div style="position:relative">
+        <input type="password" id="loginPass" placeholder="••••••••" style="padding-right:44px">
+        <button onclick="togglePass('loginPass',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">👁️</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="loginBtn">✅ Kirish</button>
+    <button class="btn btn-outline" id="toRegisterBtn">📝 Ro'yxatdan o'tish</button>
+    <button class="btn btn-outline" id="forgotBtn" style="color:var(--yellow);border-color:rgba(255,209,102,0.3)">🔑 Parolni unutdim</button>
+    <div class="auth-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div id="registerPage" class="auth-page" style="display:none">
+  <div class="login-logo">📱 Yangi hisob</div>
+  <div class="login-sub">Bir marta ro'yxatdan o'ting</div>
+  <div class="auth-card">
+    <div class="auth-title">✨ Ro'yxatdan o'tish</div>
+    <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="email@gmail.com"></div>
+    <div class="form-group"><label>Parol (kamida 6 belgi)</label>
+      <div style="position:relative">
+        <input type="password" id="regPass" placeholder="••••••••" style="padding-right:44px">
+        <button onclick="togglePass('regPass',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">👁️</button>
+      </div>
+    </div>
+    <div class="form-group"><label>Parolni takrorlang</label>
+      <div style="position:relative">
+        <input type="password" id="regPass2" placeholder="••••••••" style="padding-right:44px">
+        <button onclick="togglePass('regPass2',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted)">👁️</button>
+      </div>
+    </div>
+    <div class="form-group"><label>Rol</label>
+      <select id="regRole">
+        <option value="staff">👤 Xodim</option>
+        <option value="admin">👑 Admin</option>
+      </select>
+    </div>
+    <div class="form-group" id="adminCodeGroup" style="display:none">
+      <label>Admin kodi</label>
+      <input type="password" id="adminCode" placeholder="Admin maxfiy kodi">
+    </div>
+    <button class="btn btn-primary" id="regBtn">✅ Ro'yxatdan o'tish</button>
+    <button class="btn btn-outline" id="toLoginBtn">← Orqaga</button>
+    <div class="auth-error" id="regError"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appPage" style="display:none">
+  <header>
+    <h1>📱 Telefon Boshqaruv</h1>
+    <div class="header-right">
+      <span id="userRoleBadge" class="role-badge"></span>
+      <button class="logout-btn" id="logoutBtn">Chiqish</button>
+    </div>
+  </header>
+
+  <div class="tabs" id="mainTabs">
+    <button class="tab active" data-page="dashboard">📊 Hisobot</button>
+    <button class="tab" data-page="add">➕ Kirim</button>
+    <button class="tab" data-page="list">📋 Ro'yxat</button>
+    <button class="tab admin-only" data-page="logs" style="display:none">📜 Log</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Qoldiq (dona)</div><div class="stat-value accent" id="stat-stock">—</div></div>
+      <div class="stat-card"><div class="stat-label">Sotilgan (dona)</div><div class="stat-value yellow" id="stat-sold">—</div></div>
+      <div class="stat-card full"><div class="stat-label">📦 Ombor qiymati</div><div class="stat-value accent" id="stat-stock-value">—</div></div>
+      <div class="stat-card full"><div class="stat-label">💵 Jami kirim (barcha tovar)</div><div class="stat-value" id="stat-total-buy">—</div></div>
+      <div class="stat-card"><div class="stat-label">Jami Sotish</div><div class="stat-value" id="stat-total-sell">—</div></div>
+      <div class="stat-card"><div class="stat-label">Foyda / Zarar</div><div class="stat-value" id="stat-profit">—</div></div>
+      <div class="stat-card full debt-card"><div class="stat-label">🔴 Jami Qarzdorlik</div><div class="stat-value red" id="stat-debt">—</div></div>
+    </div>
+    <div class="form-card">
+      <div class="form-title">🔴 Qarzdorlar ro'yxati</div>
+      <div id="debt-list"><div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Qarzdor yo'q</div></div></div>
+    </div>
+    <div class="form-card">
+      <div class="form-title">📈 So'nggi sotilganlar</div>
+      <div id="recent-list"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Hali sotilgan telefon yo'q</div></div></div>
+    </div>
+  </div>
+
+  <!-- ADD -->
+  <div class="page" id="page-add">
+    <div class="form-card">
+      <div class="form-title">📥 Yangi telefon qo'shish</div>
+      <div class="form-group"><label>Telefon nomi / modeli</label><input type="text" id="phoneName" placeholder="masalan: iPhone 15 Pro"></div>
+      <div class="form-group"><label>Kirim narxi ($)</label><input type="number" id="buyPrice" placeholder="0.00"></div>
+      <div class="form-group"><label>IMEI oxirgi 5 raqam</label><input type="text" id="imei" maxlength="5" placeholder="12345"></div>
+      <div class="form-group"><label>Izoh (ixtiyoriy)</label><input type="text" id="phoneNote" placeholder="masalan: quti bor, scratches..."></div>
+      <button class="btn btn-primary" id="addPhoneBtn">✅ Qo'shish</button>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div class="page" id="page-list">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Nomi, IMEI yoki haridor...">
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" data-filter="all">Hammasi</button>
+      <button class="filter-btn" data-filter="stock">Qoldiq</button>
+      <button class="filter-btn" data-filter="debt">🔴 Qarz</button>
+      <button class="filter-btn" data-filter="sold">Sotilgan</button>
+    </div>
+    <div id="phoneList"></div>
+  </div>
+
+  <!-- LOGS (admin only) -->
+  <div class="page" id="page-logs">
+    <div class="form-card">
+      <div class="form-title">📜 Amallar tarixi</div>
+      <div id="logList"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Hali amal yo'q</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="sellModal">
+  <div class="modal">
+    <div class="modal-title">💰 Telefon sotish</div>
+    <div class="modal-sub" id="sellPhoneName"></div>
+    <div class="form-group"><label>Sotish narxi ($)</label><input type="number" id="sellPrice" placeholder="0.00"></div>
+    <div class="form-group"><label>Izoh (ixtiyoriy)</label><input type="text" id="sellNote" placeholder="naqd, o'tkazma..."></div>
+    <div class="modal-actions">
+      <button class="btn-sm" id="cancelSellBtn" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);">Bekor</button>
+      <button class="btn-sm btn-sell" id="confirmSellBtn">✅ Sotish</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="debtModal">
+  <div class="modal">
+    <div class="modal-title">🔴 Qarzga berish</div>
+    <div class="modal-sub" id="debtPhoneName"></div>
+    <div class="form-group"><label>Sotish narxi ($)</label><input type="number" id="debtPrice" placeholder="0.00"></div>
+    <div class="form-group"><label>Haridor ismi (ixtiyoriy)</label><input type="text" id="debtBuyer" placeholder="Ismi Familiyasi"></div>
+    <div class="form-group"><label>Haridor tel raqami (ixtiyoriy)</label><input type="text" id="debtPhone" placeholder="+998 90 123 45 67"></div>
+    <div class="form-group"><label>Qaytarish muddati (ixtiyoriy)</label><input type="date" id="debtDue"></div>
+    <div class="form-group"><label>Izoh (ixtiyoriy)</label><input type="text" id="debtNote" placeholder="nasiya shartlari..."></div>
+    <div class="modal-actions">
+      <button class="btn-sm" id="cancelDebtBtn" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);">Bekor</button>
+      <button class="btn-sm btn-debt" id="confirmDebtBtn">🔴 Qarzga berish</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="debtPaidModal">
+  <div class="modal">
+    <div class="modal-title">✅ Qarz to'landi</div>
+    <div class="modal-sub" id="debtPaidPhoneName"></div>
+    <div class="form-group"><label>To'langan summa ($)</label><input type="number" id="debtPaidPrice" placeholder="0.00"></div>
+    <div class="form-group"><label>Izoh (ixtiyoriy)</label><input type="text" id="debtPaidNote" placeholder="to'lov turi..."></div>
+    <div class="modal-actions">
+      <button class="btn-sm" id="cancelDebtPaidBtn" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);">Bekor</button>
+      <button class="btn-sm btn-debt-paid" id="confirmDebtPaidBtn">✅ Tasdiqlash</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Tahrirlash</div>
+    <div class="form-group"><label>Telefon nomi</label><input type="text" id="editName"></div>
+    <div class="form-group"><label>Kirim narxi ($)</label><input type="number" id="editBuy"></div>
+    <div class="form-group"><label>IMEI oxirgi 5 raqam</label><input type="text" id="editImei" maxlength="5"></div>
+    <div class="form-group"><label>Izoh</label><input type="text" id="editNote"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" id="cancelEditBtn" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);">Bekor</button>
+      <button class="btn-sm btn-edit" id="confirmEditBtn">✅ Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function togglePass(id,btn){
+  const i=document.getElementById(id);
+  if(i.type==='password'){i.type='text';btn.textContent='🙈';}
+  else{i.type='password';btn.textContent='👁️';}
+}
+document.getElementById('regRole').addEventListener('change',function(){
+  document.getElementById('adminCodeGroup').style.display=this.value==='admin'?'block':'none';
+});
+</script>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getFirestore,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,query,where,orderBy,limit,setDoc,getDoc}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const ADMIN_SECRET='appleshop2024';
+
+const app=initializeApp({
+  apiKey:"AIzaSyAPffj8uRU36hvqzUvrYuRr2ymxMskswzo",
+  authDomain:"telefon-appleshop.firebaseapp.com",
+  projectId:"telefon-appleshop",
+  storageBucket:"telefon-appleshop.firebasestorage.app",
+  messagingSenderId:"1067376374108",
+  appId:"1:1067376374108:web:8849fa7b15f1b55691d199"
+});
+
+const auth=getAuth(app);
+const db=getFirestore(app);
+let phones=[];
+let currentFilter='all';
+let activeId=null;
+let currentUser=null;
+let currentRole='staff';
+
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type?' '+type:'');
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+async function writeLog(action,details){
+  try{
+    await addDoc(collection(db,'logs'),{
+      userId:currentUser.uid,
+      userEmail:currentUser.email,
+      role:currentRole,
+      action,details,
+      time:new Date().toLocaleString('uz-UZ'),
+      ts:Date.now()
+    });
+  }catch(e){}
+}
+
+onAuthStateChanged(auth,async(user)=>{
+  document.getElementById('loadingPage').style.display='none';
+  if(user){
+    currentUser=user;
+    const uDoc=await getDoc(doc(db,'users',user.uid));
+    currentRole=uDoc.exists()?uDoc.data().role||'staff':'staff';
+    document.getElementById('loginPage').style.display='none';
+    document.getElementById('registerPage').style.display='none';
+    document.getElementById('appPage').style.display='block';
+    const badge=document.getElementById('userRoleBadge');
+    badge.textContent=currentRole==='admin'?'👑 Admin':'👤 Xodim';
+    badge.className='role-badge '+(currentRole==='admin'?'role-admin':'role-staff');
+    if(currentRole==='admin'){
+      document.querySelectorAll('.admin-only').forEach(el=>el.style.display='');
+    }
+    await loadPhones();
+    if(currentRole==='admin')await loadLogs();
+  }else{
+    currentUser=null;
+    document.getElementById('appPage').style.display='none';
+    document.getElementById('loginPage').style.display='flex';
+  }
+});
+
+async function loadPhones(){
+  try{
+    // Eski userId bilan saqlangan barcha telefonlarni olish
+    const snap=await getDocs(query(collection(db,'phones'),where('userId','==',currentUser.uid)));
+    const snap2=await getDocs(query(collection(db,'phones'),where('adminUid','==',currentUser.uid)));
+    const seen=new Set();
+    phones=[];
+    [snap,snap2].forEach(s=>{
+      s.forEach(d=>{if(!seen.has(d.id)){seen.add(d.id);phones.push({id:d.id,...d.data()});}});
+    });
+    phones.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    updateStats();renderList();renderRecent();renderDebtList();
+  }catch(e){toast('❌ '+e.message,'error');}
+}
+
+async function getAdminUid(){
+  const uDoc=await getDoc(doc(db,'users',currentUser.uid));
+  if(uDoc.exists()){
+    const d=uDoc.data();
+    if(d.role==='admin')return currentUser.uid;
+    if(d.adminUid)return d.adminUid;
+  }
+  return currentUser.uid;
+}
+
+async function loadLogs(){
+  try{
+    const q=query(collection(db,'logs'),where('userId','==',currentUser.uid),orderBy('ts','desc'),limit(50));
+    const snap=await getDocs(q);
+    const logs=[];
+    snap.forEach(d=>logs.push(d.data()));
+    renderLogs(logs);
+  }catch(e){}
+}
+
+function renderLogs(logs){
+  const el=document.getElementById('logList');
+  if(!logs.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Log yo\'q</div></div>';return;}
+  const icons={'add':'➕','sell':'💰','debt':'🔴','debt-paid':'✅','edit':'✏️','delete':'🗑️'};
+  el.innerHTML=logs.map(l=>`
+    <div class="log-item">
+      <div class="log-icon">${icons[l.action]||'📝'}</div>
+      <div>
+        <div class="log-text log-action-${l.action}">${l.details}</div>
+        <div class="log-meta">${l.userEmail} · ${l.role==='admin'?'👑 Admin':'👤 Xodim'} · ${l.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('addPhoneBtn').addEventListener('click',async()=>{
+  const name=document.getElementById('phoneName').value.trim();
+  const buy=parseFloat(document.getElementById('buyPrice').value);
+  const imei=document.getElementById('imei').value.trim();
+  const note=document.getElementById('phoneNote').value.trim();
+  if(!name)return toast('❌ Telefon nomini kiriting','error');
+  if(!buy||buy<=0)return toast('❌ Kirim narxini kiriting','error');
+  if(!imei||imei.length!==5||!/^\d+$/.test(imei))return toast('❌ IMEI 5 ta raqam bo\'lishi kerak','error');
+  try{
+    const data={userId:currentUser.uid,addedByEmail:currentUser.email,name,buy,imei,note:note||'',sold:false,debt:false,sellPrice:null,soldDate:null,sellNote:'',debtBuyer:'',debtPhone:'',debtDue:'',debtNote:'',date:new Date().toLocaleDateString('uz-UZ'),createdAt:Date.now()};
+    const ref=await addDoc(collection(db,'phones'),data);
+    phones.unshift({id:ref.id,...data});
+    document.getElementById('phoneName').value='';
+    document.getElementById('buyPrice').value='';
+    document.getElementById('imei').value='';
+    document.getElementById('phoneNote').value='';
+    await writeLog('add',`${name} (IMEI: ${imei}) — $${buy} kirim qilindi`);
+    updateStats();renderList();renderRecent();renderDebtList();
+    toast('✅ Telefon qo\'shildi!');
+  }catch(e){toast('❌ '+e.message,'error');}
+});
+
+document.getElementById('confirmSellBtn').addEventListener('click',async()=>{
+  const price=parseFloat(document.getElementById('sellPrice').value);
+  const sellNote=document.getElementById('sellNote').value.trim();
+  if(!price||price<=0)return toast('❌ Narxni kiriting','error');
+  const soldDate=new Date().toLocaleDateString('uz-UZ');
+  const phone=phones.find(p=>p.id===activeId);
+  try{
+    await updateDoc(doc(db,'phones',activeId),{sold:true,debt:false,sellPrice:price,soldDate,sellNote:sellNote||''});
+    const idx=phones.findIndex(p=>p.id===activeId);
+    Object.assign(phones[idx],{sold:true,debt:false,sellPrice:price,soldDate,sellNote:sellNote||''});
+    await writeLog('sell',`${phone.name} (IMEI: ${phone.imei}) — $${price} ga sotildi`);
+    closeAll();updateStats();renderList();renderRecent();renderDebtList();
+    toast('✅ Telefon sotildi!');
+  }catch(e){toast('❌ '+e.message,'error');}
+});
+
+document.getElementById('confirmDebtBtn').addEventListener('click',async()=>{
+  const price=parseFloat(document.getElementById('debtPrice').value);
+  if(!price||price<=0)return toast('❌ Narxni kiriting','error');
+  const debtBuyer=document.getElementById('debtBuyer').value.trim();
+  const debtPhone=document.getElementById('debtPhone').value.trim();
+  const debtDue=document.getElementById('debtDue').value;
+  const debtNote=document.getElementById('debtNote').value.trim();
+  const phone=phones.find(p=>p.id===activeId);
+  try{
+    await updateDoc(doc(db,'phones',activeId),{debt:true,sold:false,sellPrice:price,debtBuyer,debtPhone,debtDue,debtNote,debtDate:new Date().toLocaleDateString('uz-UZ')});
+    const idx=phones.findIndex(p=>p.id===activeId);
+    Object.assign(phones[idx],{debt:true,sold:false,sellPrice:price,debtBuyer,debtPhone,debtDue,debtNote,debtDate:new Date().toLocaleDateString('uz-UZ')});
+    await writeLog('debt',`${phone.name} — ${debtBuyer||'Noma\'lum'}ga $${price} qarzga berildi`);
+    closeAll();updateStats();renderList();renderRecent();renderDebtList();
+    toast('🔴 Qarzga berildi!');
+  }catch(e){toast('❌ '+e.message,'error');}
+});
+
+document.getElementById('confirmDebtPaidBtn').addEventListener('click',async()=>{
+  const price=parseFloat(document.getElementById('debtPaidPrice').value);
+  if(!price||price<=0)return toast('❌ Narxni kiriting','error');
+  const paidNote=document.getElementById('debtPaidNote').value.trim();
+  const soldDate=new Date().toLocaleDateString('uz-UZ');
+  const phone=phones.find(p=>p.id===activeId);
+  try{
+    await updateDoc(doc(db,'phones',activeId),{sold:true,debt:false,sellPrice:price,soldDate,sellNote:paidNote||'Qarz to\'landi'});
+    const idx=phones.findIndex(p=>p.id===activeId);
+    Object.assign(phones[idx],{sold:true,debt:false,sellPrice:price,soldDate,sellNote:paidNote||'Qarz to\'landi'});
+    await writeLog('debt-paid',`${phone.name} — ${phone.debtBuyer||'Noma\'lum'} qarzini to'ladi $${price}`);
+    closeAll();updateStats();renderList();renderRecent();renderDebtList();
+    toast('✅ Qarz to\'landi!');
+  }catch(e){toast('❌ '+e.message,'error');}
+});
+
+document.getElementById('confirmEditBtn').addEventListener('click',async()=>{
+  if(currentRole!=='admin')return toast('❌ Faqat admin tahrirlashi mumkin','error');
+  const name=document.getElementById('editName').value.trim();
+  const buy=parseFloat(document.getElementById('editBuy').value);
+  const imei=document.getElementById('editImei').value.trim();
+  const note=document.getElementById('editNote').value.trim();
+  const phone=phones.find(p=>p.id===activeId);
+  if(!name)return toast('❌ Nomni kiriting','error');
+  if(!buy||buy<=0)return toast('❌ Narxni kiriting','error');
+  if(!imei||imei.length!==5||!/^\d+$/.test(imei))return toast('❌ IMEI 5 ta raqam','error');
+  try{
+    await updateDoc(doc(db,'phones',activeId),{name,buy,imei,note});
+    const idx=phones.findIndex(p=>p.id===activeId);
+    Object.assign(phones[idx],{name,buy,imei,note});
+    await writeLog('edit',`${phone.name} → ${name}, narx: $${buy} ga o'zgartirildi`);
+    closeAll();updateStats();renderList();renderRecent();renderDebtList();
+    toast('✅ Tahrirlandi!');
+  }catch(e){toast('❌ '+e.message,'error');}
+});
+
+document.getElementById('phoneList').addEventListener('click',async(e)=>{
+  const card=e.target.closest('[data-action]');
+  if(!card)return;
+  const action=card.dataset.action;
+  const id=card.dataset.id;
+  const phone=phones.find(p=>p.id===id);
+  activeId=id;
+  if(action==='sell'){
+    document.getElementById('sellPhoneName').textContent=phone.name+' (IMEI: '+phone.imei+')';
+    document.getElementById('sellPrice').value='';
+    document.getElementById('sellNote').value='';
+    document.getElementById('sellModal').classList.add('open');
+  }
+  if(action==='debt'){
+    document.getElementById('debtPhoneName').textContent=phone.name+' (IMEI: '+phone.imei+')';
+    ['debtPrice','debtBuyer','debtPhone','debtDue','debtNote'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('debtModal').classList.add('open');
+  }
+  if(action==='debt-paid'){
+    document.getElementById('debtPaidPhoneName').textContent=phone.name+(phone.debtBuyer?' — '+phone.debtBuyer:'');
+    document.getElementById('debtPaidPrice').value=phone.sellPrice||'';
+    document.getElementById('debtPaidNote').value='';
+    document.getElementById('debtPaidModal').classList.add('open');
+  }
+  if(action==='edit'){
+    if(currentRole!=='admin')return toast('❌ Faqat admin tahrirlashi mumkin','error');
+    document.getElementById('editName').value=phone.name;
+    document.getElementById('editBuy').value=phone.buy;
+    document.getElementById('editImei').value=phone.imei;
+    document.getElementById('editNote').value=phone.note||'';
+    document.getElementById('editModal').classList.add('open');
+  }
+  if(action==='delete'){
+    if(currentRole!=='admin')return toast('❌ Faqat admin o\'chirishi mumkin','error');
+    if(!confirm('O\'chirishni tasdiqlaysizmi?'))return;
+    try{
+      await writeLog('delete',`${phone.name} (IMEI: ${phone.imei}) o'chirildi`);
+      await deleteDoc(doc(db,'phones',id));
+      phones=phones.filter(p=>p.id!==id);
+      updateStats();renderList();renderRecent();renderDebtList();
+      toast('🗑️ O\'chirildi');
+    }catch(e){toast('❌ '+e.message,'error');}
+  }
+});
+
+document.getElementById('debt-list').addEventListener('click',(e)=>{
+  const btn=e.target.closest('[data-action]');
+  if(!btn)return;
+  const id=btn.dataset.id;
+  const phone=phones.find(p=>p.id===id);
+  activeId=id;
+  if(btn.dataset.action==='debt-paid'){
+    document.getElementById('debtPaidPhoneName').textContent=phone.name+(phone.debtBuyer?' — '+phone.debtBuyer:'');
+    document.getElementById('debtPaidPrice').value=phone.sellPrice||'';
+    document.getElementById('debtPaidNote').value='';
+    document.getElementById('debtPaidModal').classList.add('open');
+  }
+});
+
+function closeAll(){
+  document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));
+  activeId=null;
+}
+['cancelSellBtn','cancelDebtBtn','cancelDebtPaidBtn','cancelEditBtn'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',closeAll);
+});
+
+// AUTH
+document.getElementById('loginBtn').addEventListener('click',async()=>{
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginError').style.color='var(--red)';
+  try{await signInWithEmailAndPassword(auth,email,pass);}
+  catch(e){
+    const msgs={'auth/user-not-found':'Email topilmadi','auth/wrong-password':'Parol noto\'g\'ri','auth/invalid-email':'Email noto\'g\'ri','auth/invalid-credential':'Email yoki parol noto\'g\'ri','auth/too-many-requests':'Ko\'p urinish. Biroz kuting'};
+    document.getElementById('loginError').textContent='❌ '+(msgs[e.code]||'Xatolik yuz berdi');
+  }
+});
+
+document.getElementById('forgotBtn').addEventListener('click',async()=>{
+  const email=document.getElementById('loginEmail').value.trim();
+  if(!email)return(document.getElementById('loginError').textContent='❌ Avval emailni kiriting');
+  try{
+    await sendPasswordResetEmail(auth,email);
+    document.getElementById('loginError').style.color='var(--green)';
+    document.getElementById('loginError').textContent='✅ Email ga tiklash xati yuborildi!';
+  }catch(e){
+    document.getElementById('loginError').style.color='var(--red)';
+    document.getElementById('loginError').textContent='❌ Email topilmadi';
+  }
+});
+
+document.getElementById('toRegisterBtn').addEventListener('click',()=>{
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('registerPage').style.display='flex';
+});
+document.getElementById('toLoginBtn').addEventListener('click',()=>{
+  document.getElementById('registerPage').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
+});
+
+document.getElementById('regBtn').addEventListener('click',async()=>{
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const pass2=document.getElementById('regPass2').value;
+  const role=document.getElementById('regRole').value;
+  const code=document.getElementById('adminCode').value;
+  document.getElementById('regError').textContent='';
+  if(pass!==pass2)return(document.getElementById('regError').textContent='❌ Parollar mos emas');
+  if(pass.length<6)return(document.getElementById('regError').textContent='❌ Parol kamida 6 belgi');
+  if(role==='admin'&&code!==ADMIN_SECRET)return(document.getElementById('regError').textContent='❌ Admin kodi noto\'g\'ri');
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await setDoc(doc(db,'users',cred.user.uid),{
+      email,role,shopId:role==='admin'?cred.user.uid:'',createdAt:Date.now()
+    });
+    toast('✅ Hisob yaratildi!');
+  }catch(e){
+    const msgs={'auth/email-already-in-use':'Bu email allaqachon ro\'yxatdan o\'tgan','auth/invalid-email':'Email noto\'g\'ri','auth/weak-password':'Parol juda oddiy'};
+    document.getElementById('regError').textContent='❌ '+(msgs[e.code]||'Xatolik yuz berdi');
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click',async()=>{await signOut(auth);phones=[];});
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('page-'+btn.dataset.page).classList.add('active');
+    if(btn.dataset.page==='logs')loadLogs();
+  });
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter=btn.dataset.filter;
+    renderList();
+  });
+});
+document.getElementById('searchInput').addEventListener('input',renderList);
+
+function renderList(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  let list=[...phones];
+  if(currentFilter==='stock')list=list.filter(p=>!p.sold&&!p.debt);
+  if(currentFilter==='sold')list=list.filter(p=>p.sold);
+  if(currentFilter==='debt')list=list.filter(p=>p.debt);
+  if(q)list=list.filter(p=>p.name.toLowerCase().includes(q)||p.imei.includes(q)||(p.debtBuyer||'').toLowerCase().includes(q));
+  const el=document.getElementById('phoneList');
+  if(!list.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Telefon topilmadi</div></div>';return;}
+  const isAdmin=currentRole==='admin';
+  el.innerHTML=list.map(p=>{
+    const profit=p.sold?p.sellPrice-p.buy:null;
+    const isOverdue=p.debt&&p.debtDue&&new Date(p.debtDue)<new Date();
+    const cardClass=`phone-card ${p.sold?'sold':''} ${p.debt?'debt':''} ${isOverdue?'overdue':''}`;
+    const statusText=p.debt?'🔴 Qarz':p.sold?'Sotildi':'Qoldiq';
+    return`<div class="${cardClass}">
+      <div class="phone-header">
+        <div class="phone-name">${p.name}${isOverdue?'<span class="overdue-badge">KECHIKDI</span>':''}</div>
+        <div class="phone-status">${statusText}</div>
+      </div>
+      <div class="phone-details">
+        <div><div class="detail-key">IMEI</div><div class="detail-val">${p.imei}</div></div>
+        <div><div class="detail-key">Kirim sanasi</div><div class="detail-val">${p.date}</div></div>
+        <div><div class="detail-key">Kirim narxi</div><div class="detail-val">$${Number(p.buy).toFixed(2)}</div></div>
+        <div><div class="detail-key">${p.debt?'Qarz narxi':p.sold?'Sotish narxi':'—'}</div><div class="detail-val">${(p.debt||p.sold)?'$'+Number(p.sellPrice).toFixed(2):'—'}</div></div>
+      </div>
+      ${p.debt?`<div class="debt-info">
+        ${p.debtBuyer?`<div class="debt-info-row"><span style="color:var(--muted)">👤</span><span>${p.debtBuyer}</span></div>`:''}
+        ${p.debtPhone?`<div class="debt-info-row"><span style="color:var(--muted)">📞</span><a href="tel:${p.debtPhone}" style="color:var(--accent)">${p.debtPhone}</a></div>`:''}
+        ${p.debtDue?`<div class="debt-info-row"><span style="color:var(--muted)">📅</span><span style="color:${isOverdue?'var(--red)':'var(--text)'}">${p.debtDue}</span></div>`:''}
+        ${p.debtNote?`<div class="debt-info-row"><span style="color:var(--muted)">📝</span><span>${p.debtNote}</span></div>`:''}
+      </div>`:''}
+      ${p.sold?`<div class="profit-row"><span class="profit-label">${profit>=0?'📈 Foyda':'📉 Zarar'}</span><span class="profit-val ${profit>=0?'pos':'neg'}">${profit>=0?'+':''}$${profit.toFixed(2)}</span></div>`:''}
+      ${(p.note||p.sellNote)?`<div class="note-box">
+        ${p.note?`<div style="font-size:11px;color:var(--muted)">📝 Izoh</div><div style="font-size:12px">${p.note}</div>`:''}
+        ${p.sellNote?`<div style="font-size:11px;color:var(--muted);margin-top:${p.note?'4px':'0'}">💬 Sotuv</div><div style="font-size:12px">${p.sellNote}</div>`:''}
+      </div>`:''}
+      <div class="phone-actions">
+        ${!p.sold&&!p.debt?`<button class="btn-sm btn-sell" data-action="sell" data-id="${p.id}">💰 Sotish</button><button class="btn-sm btn-debt" data-action="debt" data-id="${p.id}">🔴 Qarz</button>`:''}
+        ${p.debt?`<button class="btn-sm btn-debt-paid" data-action="debt-paid" data-id="${p.id}">✅ To'landi</button>`:''}
+        ${isAdmin&&!p.sold?`<button class="btn-sm btn-edit" data-action="edit" data-id="${p.id}">✏️</button>`:''}
+        ${isAdmin?`<button class="btn-sm btn-delete" data-action="delete" data-id="${p.id}">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats(){
+  const stock=phones.filter(p=>!p.sold&&!p.debt);
+  const sold=phones.filter(p=>p.sold);
+  const debts=phones.filter(p=>p.debt);
+  const allBuy=phones.reduce((s,p)=>s+p.buy,0);
+  const stockValue=stock.reduce((s,p)=>s+p.buy,0);
+  const totalSell=sold.reduce((s,p)=>s+(p.sellPrice||0),0);
+  const soldBuy=sold.reduce((s,p)=>s+p.buy,0);
+  const profit=totalSell-soldBuy;
+  const totalDebt=debts.reduce((s,p)=>s+(p.sellPrice||0),0);
+  document.getElementById('stat-stock').textContent=stock.length;
+  document.getElementById('stat-sold').textContent=sold.length;
+  document.getElementById('stat-stock-value').textContent='$'+stockValue.toFixed(2);
+  document.getElementById('stat-total-buy').textContent='$'+allBuy.toFixed(2);
+  document.getElementById('stat-total-sell').textContent='$'+totalSell.toFixed(2);
+  document.getElementById('stat-debt').textContent=debts.length?`$${totalDebt.toFixed(2)} (${debts.length} ta)`:'$0';
+  const el=document.getElementById('stat-profit');
+  el.textContent=(profit>=0?'+$':'-$')+Math.abs(profit).toFixed(2);
+  el.className='stat-value '+(profit>=0?'green':'red');
+}
+
+function renderDebtList(){
+  const debts=phones.filter(p=>p.debt);
+  const el=document.getElementById('debt-list');
+  if(!debts.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Qarzdor yo\'q</div></div>';return;}
+  el.innerHTML=debts.map(p=>{
+    const isOverdue=p.debtDue&&new Date(p.debtDue)<new Date();
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:600">${p.name}${isOverdue?'<span class="overdue-badge">KECHIKDI</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted)">${p.debtBuyer||'Noma\'lum'}${p.debtPhone?' · '+p.debtPhone:''}</div>
+        ${p.debtDue?`<div style="font-size:11px;color:${isOverdue?'var(--red)':'var(--muted)'}">📅 ${p.debtDue}</div>`:''}
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="font-size:14px;color:var(--red);font-weight:700">$${Number(p.sellPrice).toFixed(2)}</div>
+        <button class="btn-sm btn-debt-paid" data-action="debt-paid" data-id="${p.id}" style="font-size:10px;padding:4px 8px">✅ To'landi</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderRecent(){
+  const sold=phones.filter(p=>p.sold).slice(0,5);
+  const el=document.getElementById('recent-list');
+  if(!sold.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Hali sotilgan telefon yo\'q</div></div>';return;}
+  el.innerHTML=sold.map(p=>{
+    const profit=p.sellPrice-p.buy;
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:13px;font-weight:600">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.imei} · ${p.soldDate||''}</div></div>
+      <div style="text-align:right"><div style="font-size:13px;color:${profit>=0?'var(--green)':'var(--red)'};font-weight:700">${profit>=0?'+':''}$${profit.toFixed(2)}</div><div style="font-size:11px;color:var(--muted)">$${p.sellPrice.toFixed(2)}</div></div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
