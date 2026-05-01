@@ -253,6 +253,7 @@ header h1{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;backgroun
       <button class="filter-btn" data-filter="stock">Qoldiq</button>
       <button class="filter-btn" data-filter="debt">🔴 Qarz</button>
       <button class="filter-btn" data-filter="sold">Sotilgan</button>
+      <button class="filter-btn" data-filter="duplicate" style="border-color:rgba(255,77,106,0.4);color:var(--red)">⚠️ Dublikat IMEI</button>
     </div>
     <div id="phoneList"></div>
   </div>
@@ -358,7 +359,7 @@ function togglePass(id,btn){
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getFirestore,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,query,where,orderBy,limit}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,query,where,orderBy,limit,onSnapshot}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app=initializeApp({
   apiKey:"AIzaSyAPffj8uRU36hvqzUvrYuRr2ymxMskswzo",
@@ -398,14 +399,20 @@ onAuthStateChanged(auth,async(user)=>{
   }
 });
 
+let unsubscribePhones=null;
+
 async function loadPhones(){
+  // Avvalgi listener bo'lsa, o'chiramiz
+  if(unsubscribePhones)unsubscribePhones();
   try{
-    const snap=await getDocs(query(collection(db,'phones'),where('userId','==',currentUser.uid)));
-    phones=[];
-    snap.forEach(d=>phones.push({id:d.id,...d.data()}));
-    phones.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    updateStats();renderList();renderRecent();renderDebtList();renderTrash();
-    updateTrashTab();
+    const q=query(collection(db,'phones'),where('userId','==',currentUser.uid));
+    unsubscribePhones=onSnapshot(q,(snap)=>{
+      phones=[];
+      snap.forEach(d=>phones.push({id:d.id,...d.data()}));
+      phones.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      updateStats();renderList();renderRecent();renderDebtList();renderTrash();
+      updateTrashTab();
+    },(e)=>{toast('❌ '+e.message,'error');});
   }catch(e){toast('❌ '+e.message,'error');}
 }
 
@@ -549,10 +556,17 @@ document.getElementById('confirmDebtPaidBtn').addEventListener('click',async()=>
   if(!price||price<=0)return toast('❌ Narxni kiriting','error');
   const paidNote=document.getElementById('debtPaidNote').value.trim();
   const soldDate=new Date().toLocaleDateString('uz-UZ');
+  const updateData={sold:true,debt:false,sellPrice:price,soldDate,sellNote:paidNote||'Qarz to\'landi'};
   try{
-    await updateDoc(doc(db,'phones',activeId),{sold:true,debt:false,sellPrice:price,soldDate,sellNote:paidNote||'Qarz to\'landi'});
+    await updateDoc(doc(db,'phones',activeId),updateData);
     const idx=phones.findIndex(p=>p.id===activeId);
-    Object.assign(phones[idx],{sold:true,debt:false,sellPrice:price,soldDate,sellNote:paidNote||'Qarz to\'landi'});
+    if(idx>=0){
+      phones[idx].sold=true;
+      phones[idx].debt=false;
+      phones[idx].sellPrice=price;
+      phones[idx].soldDate=soldDate;
+      phones[idx].sellNote=paidNote||'Qarz to\'landi';
+    }
     closeAll();updateStats();renderList();renderRecent();renderDebtList();
     toast('✅ Qarz to\'landi!');
   }catch(e){toast('❌ '+e.message,'error');}
@@ -817,7 +831,11 @@ document.getElementById('regBtn').addEventListener('click',async()=>{
     document.getElementById('regError').textContent='❌ '+(msgs[e.code]||'Xatolik yuz berdi');
   }
 });
-document.getElementById('logoutBtn').addEventListener('click',async()=>{await signOut(auth);phones=[];});
+document.getElementById('logoutBtn').addEventListener('click',async()=>{
+  if(unsubscribePhones)unsubscribePhones();
+  await signOut(auth);
+  phones=[];
+});
 
 // TABS
 document.querySelectorAll('.tab').forEach(btn=>{
@@ -843,24 +861,32 @@ document.getElementById('searchInput').addEventListener('input',renderList);
 function renderList(){
   const q=document.getElementById('searchInput').value.toLowerCase();
   let list=phones.filter(p=>!p.trash);
+
+  // Dublikat IMEI larni aniqlash
+  const imeiCount={};
+  phones.filter(p=>!p.trash).forEach(p=>{if(p.imei)imeiCount[p.imei]=(imeiCount[p.imei]||0)+1;});
+  const dupImeis=new Set(Object.keys(imeiCount).filter(k=>imeiCount[k]>1));
+
   if(currentFilter==='stock')list=list.filter(p=>!p.sold&&!p.debt);
   if(currentFilter==='sold')list=list.filter(p=>p.sold);
   if(currentFilter==='debt')list=list.filter(p=>p.debt);
+  if(currentFilter==='duplicate')list=list.filter(p=>dupImeis.has(p.imei));
   if(q)list=list.filter(p=>p.name.toLowerCase().includes(q)||p.imei.includes(q)||(p.debtBuyer||'').toLowerCase().includes(q));
   const el=document.getElementById('phoneList');
   if(!list.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Telefon topilmadi</div></div>';return;}
   el.innerHTML=list.map(p=>{
     const profit=p.sold?p.sellPrice-p.buy:null;
     const isOverdue=p.debt&&p.debtDue&&new Date(p.debtDue)<new Date();
+    const isDup=dupImeis.has(p.imei);
     const cardClass=`phone-card ${p.sold?'sold':''} ${p.debt?'debt':''} ${isOverdue?'overdue':''}`;
     const statusText=p.debt?'🔴 Qarz':p.sold?'Sotildi':'Qoldiq';
-    return`<div class="${cardClass}">
+    return`<div class="${cardClass}" ${isDup?'style="border-color:rgba(255,77,106,0.5)"':''}>
       <div class="phone-header">
-        <div class="phone-name">${p.name}${isOverdue?'<span class="overdue-badge">KECHIKDI</span>':''}</div>
+        <div class="phone-name">${p.name}${isOverdue?'<span class="overdue-badge">KECHIKDI</span>':''}${isDup?'<span class="overdue-badge" style="background:var(--red);margin-left:6px">⚠️ DUBLIKAT IMEI</span>':''}</div>
         <div class="phone-status">${statusText}</div>
       </div>
       <div class="phone-details">
-        <div><div class="detail-key">IMEI</div><div class="detail-val">${p.imei}</div></div>
+        <div><div class="detail-key">IMEI</div><div class="detail-val" style="${isDup?'color:var(--red);font-weight:700':''}">${p.imei}${isDup?` (${imeiCount[p.imei]}x)`:''}</div></div>
         <div><div class="detail-key">Kirim sanasi</div><div class="detail-val">${p.date}</div></div>
         <div><div class="detail-key">Kirim narxi</div><div class="detail-val">$${Number(p.buy).toFixed(2)}</div></div>
         <div><div class="detail-key">${p.debt?'Qarz narxi':p.sold?'Sotish narxi':'—'}</div><div class="detail-val">${(p.debt||p.sold)?'$'+Number(p.sellPrice).toFixed(2):'—'}</div></div>
